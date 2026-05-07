@@ -209,10 +209,10 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# HTTPS-настройки (активируются в продакшене через переменную окружения)
-if not DEBUG:
+# HTTPS-настройки (активируются только при наличии HTTPS=true в .env)
+if os.environ.get('HTTPS', 'false').lower() == 'true':
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000       # 1 год
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
