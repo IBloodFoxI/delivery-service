@@ -18,6 +18,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - delivery_net
 
   redis:
     image: redis:7-alpine
@@ -25,6 +27,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    networks:
+      - delivery_net
 
   web:
     build:
@@ -54,6 +58,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    networks:
+      - delivery_net
 
   scheduler:
     build:
@@ -72,6 +78,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    networks:
+      - delivery_net
 
   nginx:
     image: nginx:alpine
@@ -85,8 +93,14 @@ services:
       - ./media:/app/media
     depends_on:
       - web
+    networks:
+      - delivery_net
 
 volumes:
   postgres_data:
   static_volume:
   logs_volume:
+
+networks:
+  delivery_net:
+    driver: bridge
