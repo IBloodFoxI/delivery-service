@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои обращения — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-chat-dots-fill me-2 text-success"></i>Мои обращения</h2>
+    <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Профиль
+    </a>
+</div>
+
+{% if tickets %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Тема</th>
+                        <th>Заказ</th>
+                        <th>Статус</th>
+                        <th>Создано</th>
+                        <th>Последнее сообщение</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td class="text-muted">{{ ticket.id }}</td>
+                        <td>
+                            <a href="{% url 'support:ticket_detail' ticket.id %}" class="text-decoration-none fw-semibold">
+                                {{ ticket.subject }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'orders:order_detail' ticket.order.id %}" class="text-decoration-none">
+                                #{{ ticket.order.id }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if ticket.status == 'open' %}
+                            <span class="badge bg-warning text-dark">Открыт</span>
+                            {% elif ticket.status == 'in_progress' %}
+                            <span class="badge bg-info">В обработке</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Закрыт</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ ticket.created_at|date:"d.m.Y" }}</td>
+                        <td class="text-muted small">
+                            {% with ticket.messages.last as last_msg %}
+                            {% if last_msg %}{{ last_msg.created_at|date:"d.m H:i" }}{% else %}—{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'support:ticket_detail' ticket.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye me-1"></i>Открыть
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-chat-dots text-muted" style="font-size:4rem"></i>
+    <h5 class="mt-3 text-muted">У вас нет обращений</h5>
+    <p class="text-muted">Если у вас возникли вопросы по заказу, создайте обращение на странице заказа.</p>
+    <a href="{% url 'orders:order_list' %}" class="btn btn-success mt-2">
+        <i class="bi bi-box-seam me-1"></i>Мои заказы
+    </a>
+</div>
+{% endif %}
+{% endblock %}

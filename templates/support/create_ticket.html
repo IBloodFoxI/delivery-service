@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать обращение — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0"><i class="bi bi-headset me-2 text-success"></i>Создать обращение</h2>
+            <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Назад к заказу
+            </a>
+        </div>
+
+        <!-- Order Info -->
+        <div class="card border-0 shadow-sm bg-light mb-4">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <span class="text-muted small">Заказ</span>
+                        <div class="fw-semibold">#{{ order.id }} — {{ order.delivery_address|truncatechars:40 }}</div>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted small">Статус</span>
+                        <div>
+                            <span class="badge bg-{{ order.status_badge_class }}">{{ order.get_status_display }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.subject.label }} <span class="text-danger">*</span></label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}<div class="text-danger small mt-1">{{ form.subject.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">{{ form.first_message.label }} <span class="text-danger">*</span></label>
+                        {{ form.first_message }}
+                        {% if form.first_message.errors %}<div class="text-danger small mt-1">{{ form.first_message.errors }}</div>{% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-send me-1"></i>Отправить обращение
+                        </button>
+                        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-outline-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-3 text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            Наша служба поддержки отвечает в течение 30 минут (8:00–22:00).
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Регистрация — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <i class="bi bi-lightning-charge-fill text-warning" style="font-size:2.5rem;"></i>
+                    <h2 class="mt-2 fw-bold">Регистрация</h2>
+                    <p class="text-muted small">После заполнения формы отправим код на email</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger border-0">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ФИО</label>
+                        {{ form.full_name }}
+                        {% if form.full_name.errors %}<div class="text-danger small mt-1">{{ form.full_name.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Номер телефона</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}<div class="text-danger small mt-1">{{ form.phone_number.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            Email <span class="text-muted small fw-normal">(для подтверждения)</span>
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Пароль</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Подтверждение пароля</label>
+                        {{ form.password_confirm }}
+                        {% if form.password_confirm.errors %}<div class="text-danger small mt-1">{{ form.password_confirm.errors }}</div>{% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-mig w-100 py-2 fw-semibold">
+                        <i class="bi bi-envelope-check me-2"></i>Получить код подтверждения
+                    </button>
+                </form>
+                <hr class="my-3">
+                <p class="text-center mb-0 small">
+                    Уже есть аккаунт? <a href="{% url 'accounts:login' %}" class="fw-semibold" style="color:#f97316">Войти</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

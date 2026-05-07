@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Обращение #{{ ticket.id }} — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-chat-dots-fill me-2 text-success"></i>Обращение #{{ ticket.id }}</h2>
+    <a href="{% url 'support:my_tickets' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Все обращения
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 fw-bold">{{ ticket.subject }}</h5>
+                {% if ticket.status == 'open' %}
+                <span class="badge bg-warning text-dark">Открыт</span>
+                {% elif ticket.status == 'in_progress' %}
+                <span class="badge bg-info">В обработке</span>
+                {% else %}
+                <span class="badge bg-secondary">Закрыт</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% for msg in msgs %}
+                <div class="p-3 border-bottom {% if msg.author == ticket.user %}bg-light{% else %}bg-white{% endif %}">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong class="{% if msg.author != ticket.user %}text-success{% endif %}">
+                            {% if msg.author != ticket.user %}
+                            <i class="bi bi-headset me-1"></i>Служба поддержки
+                            {% else %}
+                            <i class="bi bi-person me-1"></i>{{ msg.author.full_name }}
+                            {% endif %}
+                        </strong>
+                        <small class="text-muted">{{ msg.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <p class="mb-0" style="white-space:pre-wrap">{{ msg.message }}</p>
+                </div>
+                {% empty %}
+                <div class="p-4 text-center text-muted">Нет сообщений</div>
+                {% endfor %}
+            </div>
+
+            {% if ticket.status != 'closed' %}
+            <div class="card-footer bg-white border-top p-3">
+                <form method="post">
+                    {% csrf_token %}
+                    <label class="form-label small text-muted">Ваш ответ</label>
+                    {{ form.message }}
+                    {% if form.message.errors %}<div class="text-danger small mt-1">{{ form.message.errors }}</div>{% endif %}
+                    <button type="submit" class="btn btn-success btn-sm mt-2">
+                        <i class="bi bi-send me-1"></i>Отправить
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div class="card-footer bg-light border-top p-3 text-center text-muted small">
+                <i class="bi bi-lock me-1"></i>Обращение закрыто. Для нового вопроса создайте обращение со страницы заказа.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-3">
+                <h6 class="fw-bold mb-3">Информация</h6>
+                <p class="mb-2">
+                    <small class="text-muted d-block">Заказ</small>
+                    <a href="{% url 'orders:order_detail' ticket.order.id %}" class="fw-semibold text-decoration-none">
+                        #{{ ticket.order.id }}
+                    </a>
+                    <span class="badge bg-{{ ticket.order.status_badge_class }} ms-2">{{ ticket.order.get_status_display }}</span>
+                </p>
+                <p class="mb-2">
+                    <small class="text-muted d-block">Адрес доставки</small>
+                    {{ ticket.order.delivery_address }}
+                </p>
+                <p class="mb-2">
+                    <small class="text-muted d-block">Сумма заказа</small>
+                    <span class="fw-semibold text-success">{{ ticket.order.total_price }} ₽</span>
+                </p>
+                <p class="mb-0">
+                    <small class="text-muted d-block">Обращение создано</small>
+                    {{ ticket.created_at|date:"d.m.Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

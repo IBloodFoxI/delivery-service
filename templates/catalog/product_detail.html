@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} — Доставка МИГ{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Каталог</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'home' %}?category={{ product.category.slug }}">{{ product.category.name }}</a></li>
+        <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        {% if product.image %}
+        <img src="{{ product.image.url }}" class="img-fluid rounded-3 shadow-sm" alt="{{ product.name }}" style="max-height: 400px; width:100%; object-fit:cover;">
+        {% else %}
+        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="height:350px;">
+            <i class="bi bi-image text-muted" style="font-size:6rem;"></i>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1 class="h2 fw-bold">{{ product.name }}</h1>
+        <p class="text-muted">{{ product.category.name }}{% if product.weight %} · {{ product.weight }} г{% endif %}</p>
+
+        {% if product.description %}
+        <p class="lead">{{ product.description }}</p>
+        {% endif %}
+
+        <!-- КБЖУ -->
+        {% if product.calories %}
+        <div class="card border-0 bg-light rounded-3 mb-4">
+            <div class="card-body py-3">
+                <h6 class="fw-semibold mb-3">КБЖУ на 100 г</h6>
+                <div class="row text-center g-2">
+                    <div class="col-3">
+                        <div class="fw-bold text-warning fs-5">{{ product.calories }}</div>
+                        <small class="text-muted">ккал</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-danger fs-5">{{ product.proteins }}</div>
+                        <small class="text-muted">белки, г</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-warning fs-5">{{ product.fats }}</div>
+                        <small class="text-muted">жиры, г</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-info fs-5">{{ product.carbs }}</div>
+                        <small class="text-muted">углев., г</small>
+                    </div>
+                </div>
+                {% with kbju=product.kbju_per_product %}
+                {% if kbju %}
+                <hr class="my-2">
+                <p class="mb-0 text-muted small text-center">
+                    На порцию ({{ product.weight }} г):
+                    {{ kbju.calories }} ккал · Б: {{ kbju.proteins }} г · Ж: {{ kbju.fats }} г · У: {{ kbju.carbs }} г
+                </p>
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <span class="display-6 fw-bold text-success">{{ product.price }} ₽</span>
+            {% if user.is_authenticated and user.is_customer %}
+            <form method="post" action="{% url 'orders:add_to_cart' product.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-lg px-4">
+                    <i class="bi bi-cart-plus me-2"></i>В корзину
+                </button>
+            </form>
+            {% elif not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-success btn-lg px-4">
+                <i class="bi bi-cart-plus me-2"></i>Войти для заказа
+            </a>
+            {% endif %}
+            {% if user.is_authenticated %}
+            <button class="btn btn-outline-danger fav-btn" data-product-id="{{ product.id }}" title="Добавить в избранное">
+                <i class="bi bi-heart{% if product.id in favorites %}-fill{% endif %} me-1"></i>
+                {% if product.id in favorites %}В избранном{% else %}В избранное{% endif %}
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if similar %}
+<hr class="my-5">
+<h3 class="mb-4">Похожие товары</h3>
+<div class="row row-cols-2 row-cols-md-4 g-3">
+    {% for p in similar %}
+    <div class="col">
+        <div class="card h-100 border-0 shadow-sm product-card">
+            <a href="{% url 'catalog:product_detail' p.id %}">
+                {% if p.image %}
+                <img src="{{ p.image.url }}" class="card-img-top" alt="{{ p.name }}" style="height:130px;object-fit:cover;">
+                {% else %}
+                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:130px;">
+                    <i class="bi bi-image text-muted fs-2"></i>
+                </div>
+                {% endif %}
+            </a>
+            <div class="card-body p-2">
+                <a href="{% url 'catalog:product_detail' p.id %}" class="text-dark text-decoration-none">
+                    <p class="card-text small fw-semibold mb-1">{{ p.name }}</p>
+                </a>
+                <span class="text-success fw-bold">{{ p.price }} ₽</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+document.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const productId = this.dataset.productId;
+        fetch(`/catalog/favorite/${productId}/toggle/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN },
+        }).then(r => r.json()).then(data => {
+            const icon = this.querySelector('i');
+            if (data.is_favorite) {
+                icon.className = 'bi bi-heart-fill me-1';
+                this.innerHTML = '<i class="bi bi-heart-fill me-1"></i>В избранном';
+            } else {
+                this.innerHTML = '<i class="bi bi-heart me-1"></i>В избранное';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

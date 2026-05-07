@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Тех. поддержка — Доставка МИГ{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-headset me-2 text-success"></i>Панель тех. поддержки</h2>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="text-warning fs-2 fw-bold">{{ stats.open }}</div>
+            <div class="text-muted small">Открытых тикетов</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="text-info fs-2 fw-bold">{{ stats.in_progress }}</div>
+            <div class="text-muted small">В обработке</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="text-success fs-2 fw-bold">{{ stats.closed_today }}</div>
+            <div class="text-muted small">Закрытых</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center p-3">
+            <div class="text-primary fs-2 fw-bold">{{ stats.active_deliveries }}</div>
+            <div class="text-muted small">Активных доставок</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3">Заказы и выручка (14 дней)</h6>
+                <canvas id="ordersChart" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3">Тикеты (14 дней)</h6>
+                <canvas id="ticketsChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold mb-0">Открытые тикеты</h5>
+    <div class="d-flex gap-2">
+        <a href="{% url 'support_panel:export_pdf' %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Скачать отчёт PDF
+        </a>
+        <a href="{% url 'support_panel:deliveries_list' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-truck me-1"></i>Управление доставками
+        </a>
+    </div>
+</div>
+
+{% if open_tickets %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Тема</th>
+                        <th>Клиент</th>
+                        <th>Заказ</th>
+                        <th>Статус</th>
+                        <th>Создан</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in open_tickets %}
+                    <tr>
+                        <td>{{ ticket.id }}</td>
+                        <td><a href="{% url 'support_panel:ticket_detail' ticket.id %}" class="text-decoration-none fw-semibold">{{ ticket.subject }}</a></td>
+                        <td>{{ ticket.user.full_name }}</td>
+                        <td>#{{ ticket.order.id }}</td>
+                        <td>
+                            {% if ticket.status == 'open' %}
+                            <span class="badge bg-warning text-dark">Открыт</span>
+                            {% else %}
+                            <span class="badge bg-info">В обработке</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ ticket.created_at|date:"d.m H:i" }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'support_panel:ticket_detail' ticket.id %}" class="btn btn-success btn-sm">
+                                    <i class="bi bi-reply"></i>
+                                </a>
+                                <form method="post" action="{% url 'support_panel:close_ticket' ticket.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm" title="Закрыть тикет">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-4 text-muted">
+    <i class="bi bi-check-circle text-success fs-1"></i>
+    <p class="mt-2">Все тикеты обработаны!</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const labels  = {{ chart_labels|safe }};
+const oData   = {{ chart_orders|safe }};
+const rData   = {{ chart_revenue|safe }};
+const tData   = {{ chart_tickets|safe }};
+
+new Chart(document.getElementById('ordersChart'), {
+    data: {
+        labels,
+        datasets: [
+            {
+                type: 'bar',
+                label: 'Заказы',
+                data: oData,
+                backgroundColor: 'rgba(25,135,84,0.7)',
+                yAxisID: 'y',
+            },
+            {
+                type: 'line',
+                label: 'Выручка (₽)',
+                data: rData,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13,110,253,0.1)',
+                tension: 0.3,
+                yAxisID: 'y2',
+            },
+        ],
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+            y:  { beginAtZero: true, position: 'left',  title: { display: true, text: 'Заказов' } },
+            y2: { beginAtZero: true, position: 'right', title: { display: true, text: '₽' }, grid: { drawOnChartArea: false } },
+        },
+    },
+});
+
+new Chart(document.getElementById('ticketsChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Тикеты', data: tData, backgroundColor: 'rgba(255,193,7,0.8)' }] },
+    options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+});
+</script>
+{% endblock %}

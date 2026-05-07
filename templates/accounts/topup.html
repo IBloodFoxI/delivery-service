@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Пополнение баланса — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold fs-5">
+                <i class="bi bi-wallet2 me-2 text-success"></i>Пополнение баланса
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Ваш текущий баланс: <strong>{{ user.balance|floatformat:2 }} ₽</strong>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <h6 class="fw-semibold mb-3">Выберите сумму</h6>
+                    <div class="row g-2 mb-4">
+                        {% for value, label in form.amount.field.choices %}
+                        <div class="col-4">
+                            <div class="amount-card border rounded-3 p-3 text-center cursor-pointer {% if forloop.first %}border-success{% endif %}"
+                                 onclick="selectAmount(this, '{{ value }}')">
+                                <span class="fw-bold text-success">{{ label }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="amount" id="amountInput" value="100">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Или введите сумму</label>
+                        {{ form.custom_amount }}
+                        <div class="form-text">Минимум 10 ₽, максимум 100 000 ₽</div>
+                    </div>
+                    {% if yookassa_enabled %}
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                        <i class="bi bi-credit-card me-2"></i>Оплатить через ЮКассу
+                    </button>
+                    <p class="text-muted small text-center mt-2">
+                        <i class="bi bi-shield-check me-1 text-success"></i>Безопасный платёж через ЮКассу
+                    </p>
+                    {% else %}
+                    <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                        <i class="bi bi-check2-circle me-2"></i>Пополнить (тестовый режим)
+                    </button>
+                    <p class="text-muted small text-center mt-2">ЮКасса не настроена — баланс зачисляется мгновенно</p>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.amount-card { cursor: pointer; transition: all 0.2s; }
+.amount-card:hover { border-color: #198754 !important; background: #f0fff4; }
+.amount-card.selected { border-color: #198754 !important; background: #d1fae5; }
+</style>
+<script>
+function selectAmount(el, val) {
+    document.querySelectorAll('.amount-card').forEach(c => c.classList.remove('selected', 'border-success'));
+    el.classList.add('selected', 'border-success');
+    document.getElementById('amountInput').value = val;
+    document.getElementById('id_custom_amount').value = '';
+}
+document.querySelector('.amount-card').classList.add('selected');
+</script>
+{% endblock %}

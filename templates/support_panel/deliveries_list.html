@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Управление доставками — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-truck me-2 text-primary"></i>Все доставки</h2>
+    <a href="{% url 'support_panel:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="d-flex gap-3 align-items-end flex-wrap">
+            <div>
+                <label class="form-label small text-muted mb-1">Статус</label>
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Все статусы</option>
+                    {% for val, label in statuses %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Клиент</th>
+                        <th>Курьер</th>
+                        <th>Адрес</th>
+                        <th>Сумма</th>
+                        <th>Статус</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.user.full_name }}</td>
+                        <td>{{ order.courier.full_name|default:"—" }}</td>
+                        <td class="text-muted small">{{ order.delivery_address|truncatechars:35 }}</td>
+                        <td class="fw-semibold text-success">{{ order.total_price }} ₽</td>
+                        <td><span class="badge bg-{{ order.status_badge_class }}">{{ order.get_status_display }}</span></td>
+                        <td class="text-muted small">{{ order.created_at|date:"d.m H:i" }}</td>
+                        <td>
+                            {% if order.status not in 'delivered,cancelled' %}
+                            <form method="post" action="{% url 'support_panel:cancel_delivery' order.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Отменить заказ #{{ order.id }}? Средства будут возвращены клиенту.')">
+                                    <i class="bi bi-x-circle me-1"></i>Отменить
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

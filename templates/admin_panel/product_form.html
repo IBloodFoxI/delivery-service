@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+        <i class="bi bi-bag-fill me-2 text-success"></i>{{ title }}
+    </h2>
+    <a href="{% url 'admin_panel:products_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">{{ form.name.label }}</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">{{ form.category.label }}</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}<div class="text-danger small">{{ form.category.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Цена (₽)</label>
+                            {{ form.price }}
+                            {% if form.price.errors %}<div class="text-danger small">{{ form.price.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Вес (г)</label>
+                            {{ form.weight }}
+                            {% if form.weight.errors %}<div class="text-danger small">{{ form.weight.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Фото</label>
+                            {{ form.image }}
+                            {% if product and product.image %}
+                            <small class="text-muted d-block mt-1">Текущее: <a href="{{ product.image.url }}" target="_blank">открыть</a></small>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12"><hr class="my-1"><p class="fw-semibold mb-2 text-muted small">КБЖУ (на 100 г)</p></div>
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ form.calories.label }}</label>
+                            {{ form.calories }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ form.proteins.label }}</label>
+                            {{ form.proteins }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ form.fats.label }}</label>
+                            {{ form.fats }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">{{ form.carbs.label }}</label>
+                            {{ form.carbs }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Похожие товары</label>
+                            {{ form.similar_products }}
+                            <small class="text-muted d-block">Удерживайте Ctrl для выбора нескольких</small>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.is_available }}
+                                <label class="form-check-label" for="{{ form.is_available.id_for_label }}">
+                                    Товар доступен для заказа
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i>
+                                {% if product %}Сохранить изменения{% else %}Добавить товар{% endif %}
+                            </button>
+                            <a href="{% url 'admin_panel:products_list' %}" class="btn btn-outline-secondary ms-2">Отмена</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

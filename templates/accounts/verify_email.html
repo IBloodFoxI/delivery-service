@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Подтверждение email — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="mb-3" style="font-size:3rem;">📧</div>
+                    <h2 class="fw-bold">Проверьте почту</h2>
+                    <p class="text-muted small mb-1">Мы отправили 6-значный код на</p>
+                    <p class="fw-semibold" style="color:#f97316">{{ email }}</p>
+                    <p class="text-muted small">Введите код ниже для завершения регистрации</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <input type="text" name="code" class="form-control form-control-lg text-center fw-bold"
+                               maxlength="6" minlength="6" pattern="\d{6}"
+                               placeholder="_ _ _ _ _ _"
+                               autocomplete="one-time-code"
+                               autofocus
+                               style="font-size:2rem; letter-spacing:.5rem;">
+                        <div class="form-text text-center mt-2">Код действителен 10 минут</div>
+                    </div>
+                    <button type="submit" class="btn btn-mig w-100 py-2 fw-semibold">
+                        <i class="bi bi-check2-circle me-2"></i>Подтвердить и войти
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p class="text-muted small mb-2">Не получили письмо?</p>
+                    <a href="?resend=1" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Отправить повторно
+                    </a>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="{% url 'accounts:register' %}" class="text-muted small">
+                        <i class="bi bi-arrow-left me-1"></i>Вернуться к регистрации
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-light border mt-3 small text-muted">
+            <i class="bi bi-info-circle me-1"></i>
+            Проверьте папку «Спам», если письмо не пришло в течение минуты.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Автоматически переводить фокус после ввода 6 цифр
+document.querySelector('[name=code]').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '');
+    if (this.value.length === 6) {
+        this.closest('form').submit();
+    }
+});
+</script>
+{% endblock %}

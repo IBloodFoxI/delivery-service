@@ -1,0 +1,196 @@
+/* ══════════════════════════════════════════
+   Палитра "Доставка МИГ"
+   --navy-900: #0a0f1e   (самый тёмный)
+   --navy-800: #141c35
+   --navy-700: #1a2547
+   --orange:   #f97316   (акцент МИГ)
+   --orange-h: #ea6c10   (hover)
+   --surface:  #f1f4f8   (фон страницы)
+   ══════════════════════════════════════════ */
+
+/* ── Основа ── */
+body {
+    background-color: #f1f4f8;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+main { flex: 1 0 auto; }
+
+/* ── Навбар ── */
+.mig-navbar {
+    background: linear-gradient(135deg, #0a0f1e 0%, #141c35 60%, #1a2547 100%);
+    border-bottom: 2px solid rgba(249,115,22,.35);
+}
+.mig-navbar .nav-link { color: rgba(255,255,255,.75) !important; font-size: .9rem; transition: color .15s; }
+.mig-navbar .nav-link:hover,
+.mig-navbar .nav-link.active { color: #f97316 !important; }
+
+/* ── Бренд ── */
+.brand-text { font-size: 1.35rem; font-weight: 700; letter-spacing: -.5px; color: #fff; }
+.brand-mig  { color: #f97316; font-style: italic; font-size: 1.5rem; letter-spacing: -1px; }
+
+/* ── Аватар ── */
+.avatar-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #f97316, #c2410c);
+    color: #fff; font-weight: 700; font-size: .85rem;
+}
+
+/* ── Футер ── */
+.mig-footer {
+    background: linear-gradient(135deg, #0a0f1e 0%, #141c35 100%);
+    border-top: 2px solid rgba(249,115,22,.2);
+}
+
+/* ── Hero-баннер (каталог) ── */
+.hero-banner {
+    background: linear-gradient(150deg, #0a0f1e 0%, #141c35 55%, #1f2d50 100%);
+    position: relative;
+    overflow: hidden;
+}
+.hero-banner-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(249,115,22,.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+.hero-search { max-width: 500px; margin: 0 auto; }
+.hero-search .form-control {
+    border: none;
+    border-radius: .5rem 0 0 .5rem;
+    font-size: 1rem;
+    box-shadow: none;
+}
+.hero-search .btn-mig { border-radius: 0 .5rem .5rem 0; }
+
+/* ── Переопределяем Bootstrap btn-success → тёмный неви (Metro-стиль) ──
+   text-success и bg-success НЕ трогаем — цены и бейджи остаются зелёными */
+.btn-success {
+    --bs-btn-bg:                #0d9488;
+    --bs-btn-border-color:      #0d9488;
+    --bs-btn-hover-bg:          #0f766e;
+    --bs-btn-hover-border-color:#0f766e;
+    --bs-btn-active-bg:         #0f766e;
+    --bs-btn-disabled-bg:       #0d9488;
+    --bs-btn-disabled-border-color: #0d9488;
+}
+.btn-outline-success {
+    --bs-btn-color:             #0d9488;
+    --bs-btn-border-color:      #0d9488;
+    --bs-btn-hover-bg:          #0d9488;
+    --bs-btn-hover-border-color:#0d9488;
+    --bs-btn-hover-color:       #fff;
+    --bs-btn-active-bg:         #0f766e;
+}
+
+/* ── Кнопка-акцент МИГ ── */
+.btn-mig {
+    background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+    border: none; color: #fff; font-weight: 600;
+    transition: opacity .15s;
+}
+.btn-mig:hover { opacity: .88; color: #fff; }
+.btn-mig:active { opacity: .75; }
+
+/* ── Контурная кнопка МИГ ── */
+.btn-outline-mig {
+    border: 1.5px solid #f97316; color: #f97316;
+    background: transparent; font-weight: 500;
+}
+.btn-outline-mig:hover { background: #f97316; color: #fff; }
+
+/* ── Карточки с hover ── */
+.hover-card {
+    transition: transform .15s ease, box-shadow .15s ease;
+    border-radius: .875rem !important;
+}
+.hover-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 .75rem 2rem rgba(0,0,0,.12) !important;
+}
+
+/* ── Карточки товаров ── */
+.product-card {
+    transition: transform .15s ease, box-shadow .15s ease;
+    border-radius: .875rem !important;
+    overflow: hidden;
+}
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 .75rem 2rem rgba(0,0,0,.12) !important;
+}
+.product-card .card-img-top { height: 200px; object-fit: cover; }
+.product-card .product-img-placeholder {
+    height: 200px;
+    background: linear-gradient(135deg, #1a2547 0%, #0a0f1e 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem; color: rgba(249,115,22,.4);
+}
+
+/* ── Категории (сайдбар) ── */
+.list-group-item { border: none; border-radius: .5rem !important; margin-bottom: 2px; transition: background .15s; }
+.list-group-item:hover { background-color: #fff3e6 !important; color: #f97316; }
+.list-group-item.active {
+    background: linear-gradient(135deg, #f97316 0%, #c2410c 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+}
+.list-group-item.active .badge { background: rgba(255,255,255,.3) !important; }
+
+/* ── Статус-бейджи ── */
+.badge.bg-pending      { background-color: #f59e0b !important; color: #000; }
+.badge.bg-assigned     { background-color: #0ea5e9 !important; }
+.badge.bg-in_progress  { background-color: #6366f1 !important; }
+.badge.bg-delivered    { background-color: #22c55e !important; }
+.badge.bg-cancelled    { background-color: #ef4444 !important; }
+
+/* ── Корзина ── */
+.cart-item-img { width: 64px; height: 64px; object-fit: cover; border-radius: .5rem; }
+
+/* ── Таймлайн доставки ── */
+.delivery-timeline { position: relative; padding-left: 2rem; }
+.delivery-timeline::before {
+    content: ''; position: absolute;
+    left: .6rem; top: .4rem; bottom: .4rem;
+    width: 2px; background-color: #e2e8f0;
+}
+.timeline-item { position: relative; margin-bottom: 1.25rem; }
+.timeline-dot {
+    position: absolute; left: -1.65rem; top: .15rem;
+    width: 1rem; height: 1rem; border-radius: 50%;
+    border: 2px solid #e2e8f0; background: #fff;
+}
+.timeline-dot.done   { background: #22c55e; border-color: #22c55e; }
+.timeline-dot.active { background: #f97316; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.25); }
+
+/* ── Тикеты поддержки ── */
+.ticket-message-support { border-left: 3px solid #f97316; }
+.ticket-message-user    { border-left: 3px solid #e2e8f0; }
+
+/* ── Суммы в пополнении ── */
+.amount-card { cursor: pointer; transition: all .2s; }
+.amount-card:hover   { border-color: #f97316 !important; background: #fff7ed; }
+.amount-card.selected { border-color: #f97316 !important; background: #fed7aa; }
+
+/* ── Кошелёк курьера ── */
+.wallet-balance-card {
+    background: linear-gradient(135deg, #0a0f1e 0%, #1f2d50 100%);
+    border-radius: 1rem; color: #fff;
+}
+
+/* ── Таблицы ── */
+.table th { font-weight: 600; color: #374151; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── КБЖУ ── */
+.kbju-table th { background-color: #f8fafc; font-weight: 600; }
+.kbju-row-product { background-color: #fff7ed; font-weight: 600; }
+
+/* ── Адаптивность ── */
+@media (max-width: 576px) {
+    .hero-banner { padding: 2.5rem 1rem !important; }
+    .product-card .card-img-top,
+    .product-card .product-img-placeholder { height: 150px; }
+}

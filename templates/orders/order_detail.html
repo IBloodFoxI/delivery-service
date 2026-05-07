@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Заказ #{{ order.id }} — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-receipt me-2"></i>Заказ #{{ order.id }}</h5>
+                <span class="badge bg-{{ order.status_badge_class }} fs-6">{{ order.get_status_display }}</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Адрес доставки</small>
+                        <strong>{{ order.delivery_address }}</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Дата заказа</small>
+                        <strong>{{ order.created_at|date:"d.m.Y H:i" }}</strong>
+                    </div>
+                    {% if order.comment %}
+                    <div class="col-12">
+                        <small class="text-muted d-block">Комментарий курьеру</small>
+                        <em>{{ order.comment }}</em>
+                    </div>
+                    {% endif %}
+                    {% if order.courier %}
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Курьер</small>
+                        <strong>{{ order.courier.full_name }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Состав заказа -->
+                <h6 class="fw-bold mb-3">Состав заказа</h6>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Товар</th>
+                                <th class="text-center">Кол-во</th>
+                                <th class="text-end">Цена</th>
+                                <th class="text-end">Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.product_name }}</td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end text-muted">{{ item.price }} ₽</td>
+                                <td class="text-end fw-semibold">{{ item.subtotal }} ₽</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold">Итого:</td>
+                                <td class="text-end fw-bold text-success fs-5">{{ order.total_price }} ₽</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Тикет поддержки -->
+        {% if user.is_customer and order.status != 'delivered' and order.status != 'cancelled' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-2"><i class="bi bi-headset me-2 text-success"></i>Есть вопросы?</h6>
+                {% if ticket %}
+                <p class="text-muted mb-2">Ваш тикет: <strong>{{ ticket.subject }}</strong> —
+                    <span class="badge bg-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                </p>
+                <a href="{% url 'support:ticket_detail' ticket.id %}" class="btn btn-outline-success btn-sm">
+                    Открыть тикет
+                </a>
+                {% else %}
+                <p class="text-muted mb-2">Напишите в техническую поддержку</p>
+                <a href="{% url 'support:create_ticket' order.id %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-chat-dots me-1"></i>Написать в поддержку
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Статус доставки -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-geo-alt me-2 text-success"></i>Статус доставки
+            </div>
+            <div class="card-body p-4">
+                {% if delivery %}
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;flex-shrink:0;">
+                            <i class="bi bi-check-lg"></i>
+                        </div>
+                        <div>
+                            <strong>Заказ принят</strong>
+                            <p class="mb-0 text-muted small">{{ order.created_at|date:"H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if order.status in 'assigned,in_progress,delivered' %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;flex-shrink:0;">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                        <div>
+                            <strong>Курьер назначен</strong>
+                            <p class="mb-0 text-muted small">{{ delivery.courier.full_name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'in_progress' or order.status == 'delivered' %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;flex-shrink:0;">
+                            <i class="bi bi-bicycle"></i>
+                        </div>
+                        <div>
+                            <strong>В пути</strong>
+                            <p class="mb-0 text-muted small">
+                                Ориентировочное время: ~{{ delivery.estimated_minutes }} мин
+                                <br><em class="text-info small">(Отслеживание доступно в мобильном приложении)</em>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'delivered' %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;flex-shrink:0;">
+                            <i class="bi bi-house-check"></i>
+                        </div>
+                        <div>
+                            <strong>Доставлено!</strong>
+                            {% if delivery.completed_at %}
+                            <p class="mb-0 text-muted small">{{ delivery.completed_at|date:"H:i" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted">Поиск курьера...</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary mt-4">
+    <i class="bi bi-arrow-left me-1"></i>Назад к заказам
+</a>
+{% endblock %}

@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Панель курьера — Доставка МИГ{% endblock %}
+
+{% block extra_css %}
+<style>
+#courier-map { height: 280px; border-radius: .75rem; border: 1px solid #dee2e6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-3"><i class="bi bi-bicycle me-2 text-success"></i>Панель курьера</h2>
+<div class="d-flex align-items-center gap-3 mb-4">
+    <p class="text-muted mb-0">Добро пожаловать, <strong>{{ user.full_name }}</strong></p>
+    <span class="badge {% if has_location %}bg-success{% else %}bg-warning text-dark{% endif %}" id="geoStatus">
+        <i class="bi bi-geo-alt{% if has_location %}-fill{% endif %} me-1"></i>
+        {% if has_location %}Геолокация активна{% else %}Определяем геолокацию...{% endif %}
+    </span>
+</div>
+
+<!-- Карта с позицией курьера и заказами -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-map me-2 text-primary"></i>Карта заказов</span>
+        <small class="text-muted">
+            <span class="me-3"><i class="bi bi-circle-fill text-primary me-1"></i>Вы</span>
+            <span><i class="bi bi-circle-fill text-warning me-1"></i>Заказы</span>
+        </small>
+    </div>
+    <div class="card-body p-2">
+        <div id="courier-map"></div>
+    </div>
+</div>
+
+{% if active_orders %}
+<h5 class="fw-bold mb-3 text-primary"><i class="bi bi-arrow-right-circle me-2"></i>Активные доставки</h5>
+<div class="row g-3 mb-5">
+    {% for order in active_orders %}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm border-start border-primary border-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <h5 class="mb-0 fw-bold">Заказ #{{ order.id }}</h5>
+                    <span class="badge bg-{{ order.status_badge_class }}">{{ order.get_status_display }}</span>
+                </div>
+                <p class="text-muted mb-1"><i class="bi bi-person me-1"></i>{{ order.user.full_name }}</p>
+                <p class="text-muted mb-1"><i class="bi bi-telephone me-1"></i>{{ order.user.phone_display }}</p>
+                <p class="mb-2"><i class="bi bi-geo-alt text-success me-1"></i><strong>{{ order.delivery_address }}</strong></p>
+                {% if order.comment %}
+                <p class="text-muted small mb-2"><i class="bi bi-chat me-1"></i>{{ order.comment }}</p>
+                {% endif %}
+                <p class="fw-bold text-success mb-3">Сумма: {{ order.total_price }} ₽</p>
+                <div class="d-flex gap-2">
+                    {% if order.status == 'assigned' %}
+                    <form method="post" action="{% url 'courier:start_delivery' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-play-fill me-1"></i>Начать доставку
+                        </button>
+                    </form>
+                    {% elif order.status == 'in_progress' %}
+                    <form method="post" action="{% url 'courier:complete_delivery' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bi bi-check-lg me-1"></i>Доставлено!
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if available_orders %}
+<h5 class="fw-bold mb-3" style="color:#f97316">
+    <i class="bi bi-inbox me-2"></i>Заказы
+    {% if has_location %}
+    <small class="text-muted fw-normal fs-6 ms-2">
+        <i class="bi bi-circle-fill text-warning me-1" style="font-size:.5rem;"></i>доступные ≤10 км
+        <i class="bi bi-circle-fill text-secondary ms-2 me-1" style="font-size:.5rem;"></i>далёкие >10 км
+    </small>
+    {% endif %}
+</h5>
+<div class="row g-3 mb-5">
+    {% for order in available_orders %}
+    {% if order.in_range or order.in_range is None %}
+    {# ── Доступный заказ (в радиусе 10 км или геолокация не определена) ── #}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm border-start border-warning border-3">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <strong>Заказ #{{ order.id }}</strong>
+                    <span class="text-success fw-bold">{{ order.total_price }} ₽</span>
+                </div>
+                <p class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>{{ order.delivery_address }}</p>
+                {% if order.distance_km is not None %}
+                <p class="small mb-2">
+                    <i class="bi bi-signpost-split me-1 text-success"></i>
+                    <span class="text-success fw-semibold">{{ order.distance_km }} км от вас</span>
+                </p>
+                {% elif order.in_range is None %}
+                <p class="small text-muted mb-2"><i class="bi bi-question-circle me-1"></i>Разрешите геолокацию</p>
+                {% endif %}
+                <form method="post" action="{% url 'courier:accept_order' order.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning btn-sm mt-1">
+                        <i class="bi bi-hand-index me-1"></i>Принять заказ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    {# ── Серый заказ (далеко, >10 км) ── #}
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm opacity-50">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <strong class="text-muted">Заказ #{{ order.id }}</strong>
+                    <span class="text-muted fw-bold">{{ order.total_price }} ₽</span>
+                </div>
+                <p class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>{{ order.delivery_address }}</p>
+                <p class="small mb-2">
+                    <i class="bi bi-signpost-split me-1 text-muted"></i>
+                    <span class="text-muted">{{ order.distance_km }} км от вас</span>
+                </p>
+                <button class="btn btn-secondary btn-sm mt-1" disabled title="Заказ слишком далеко">
+                    <i class="bi bi-lock me-1"></i>Далеко от вас
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% else %}
+{% if not active_orders %}
+<div class="text-center py-5">
+    <i class="bi bi-bicycle text-muted" style="font-size:5rem;"></i>
+    <h4 class="mt-3 text-muted">Нет доступных заказов</h4>
+    <p class="text-muted">Ожидайте новых заказов</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if completed_orders %}
+<h5 class="fw-bold mb-3 text-muted"><i class="bi bi-check-circle me-2"></i>Завершённые заказы</h5>
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Клиент</th><th>Адрес</th><th>Сумма</th><th>Время</th></tr>
+                </thead>
+                <tbody>
+                    {% for order in completed_orders %}
+                    <tr>
+                        <td>{{ order.id }}</td>
+                        <td>{{ order.user.full_name }}</td>
+                        <td class="text-muted small">{{ order.delivery_address|truncatechars:40 }}</td>
+                        <td class="text-success fw-semibold">{{ order.total_price }} ₽</td>
+                        <td class="text-muted small">{{ order.updated_at|date:"d.m H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ ymaps_key }}&lang=ru_RU"></script>
+<script>
+const CSRF       = '{{ csrf_token }}';
+const UPDATE_URL = '{% url "courier:update_location" %}';
+const MAP_ORDERS = {{ map_orders_json|safe }};
+
+let ymap            = null;
+let courierMark     = null;
+let lastSentAt      = 0;
+let mapCentered     = false; // центрируем только при первом фиксе
+const SEND_EVERY_MS = 30_000;
+
+/* ── Инициализация карты (нейтральная точка — Москва) ── */
+ymaps.ready(function () {
+    ymap = new ymaps.Map('courier-map', {
+        center: [55.7558, 37.6173],
+        zoom: 9,
+        controls: ['zoomControl', 'geolocationControl'],
+    });
+
+    /* Маркеры заказов */
+    MAP_ORDERS.forEach(function (o) {
+        ymap.geoObjects.add(new ymaps.Placemark(
+            [o.lat, o.lon],
+            {
+                balloonContent: '<b>Заказ #' + o.id + '</b>' +
+                    (o.in_range ? '' : ' <span style="color:#6c757d">(далеко)</span>') +
+                    '<br><small>' + o.address + '</small>',
+                hintContent: 'Заказ #' + o.id,
+            },
+            { preset: o.in_range ? 'islands#yellowDeliveryCircleIcon' : 'islands#grayCircleIcon' }
+        ));
+    });
+
+    /* Сразу запускаем слежение за позицией — карта сама подстроится */
+    startWatching();
+});
+
+/* ── Обновить маркер курьера на карте ── */
+function updateMarker(lat, lon) {
+    if (!ymap) return;
+    if (courierMark) ymap.geoObjects.remove(courierMark);
+    courierMark = new ymaps.Placemark(
+        [lat, lon],
+        { balloonContent: '<b>Вы здесь</b>', hintContent: 'Ваша позиция' },
+        { preset: 'islands#blueDotIconWithCaption', iconCaption: 'Вы' }
+    );
+    ymap.geoObjects.add(courierMark);
+
+    // Центрируем карту только один раз — при первом получении позиции.
+    // После этого пользователь может свободно двигать карту.
+    if (!mapCentered) {
+        ymap.setCenter([lat, lon], 13);
+        mapCentered = true;
+    }
+}
+
+/* ── Отправить позицию на сервер ── */
+function sendToServer(lat, lon) {
+    lastSentAt = Date.now();
+    fetch(UPDATE_URL, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lon }),
+    }).then(r => {
+        if (!r.ok) return;
+        const badge = document.getElementById('geoStatus');
+        if (badge) {
+            badge.className = 'badge bg-success';
+            badge.innerHTML = '<i class="bi bi-geo-alt-fill me-1"></i>Геолокация активна';
+        }
+    }).catch(() => {});
+}
+
+/* ── Обработчик каждого обновления позиции ── */
+function onPosition(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    /* Карта — обновляем немедленно при каждом изменении */
+    updateMarker(lat, lon);
+
+    /* Сервер — не чаще раза в 30 сек */
+    if (Date.now() - lastSentAt >= SEND_EVERY_MS) {
+        sendToServer(lat, lon);
+    }
+}
+
+function onGeoError(err) {
+    const badge = document.getElementById('geoStatus');
+    if (badge) {
+        badge.className = 'badge bg-danger';
+        badge.innerHTML = '<i class="bi bi-geo-alt me-1"></i>Геолокация недоступна';
+    }
+    console.warn('Geolocation error:', err.message);
+}
+
+/* ── Запуск непрерывного слежения ── */
+function startWatching() {
+    if (!navigator.geolocation) {
+        onGeoError({ message: 'Geolocation not supported' });
+        return;
+    }
+    /* watchPosition стреляет сразу и при каждом изменении позиции */
+    navigator.geolocation.watchPosition(onPosition, onGeoError, {
+        enableHighAccuracy: true,
+        maximumAge: 0,       // никогда не брать кешированную позицию
+        timeout: 10000,
+    });
+
+    /* Страховочный интервал: раз в 30 сек принудительно шлём на сервер
+       даже если watchPosition не дал нового события (позиция не изменилась) */
+    setInterval(() => {
+        if (Date.now() - lastSentAt >= SEND_EVERY_MS && courierMark) {
+            const coords = courierMark.geometry.getCoordinates();
+            sendToServer(coords[0], coords[1]);
+        }
+    }, SEND_EVERY_MS);
+}
+</script>
+{% endblock %}

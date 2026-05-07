@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" class="rounded-circle mx-auto mb-3" width="100" height="100" style="object-fit:cover;">
+            {% else %}
+            <div class="avatar-circle mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold" style="width:100px;height:100px;font-size:2.5rem;border-radius:50%;">
+                {{ user.full_name|first|upper }}
+            </div>
+            {% endif %}
+            <h4 class="fw-bold">{{ user.full_name }}</h4>
+            <span class="badge bg-success mb-2">{{ user.get_role_display }}</span>
+            <p class="text-muted mb-1"><i class="bi bi-telephone me-1"></i>{{ user.phone_display }}</p>
+            {% if user.email %}
+            <p class="text-muted small mb-1"><i class="bi bi-envelope me-1"></i>{{ user.email_display }}</p>
+            {% endif %}
+            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline-secondary mt-3 w-100">
+                <i class="bi bi-pencil me-1"></i>Редактировать
+            </a>
+        </div>
+    </div>
+    <div class="col-md-8">
+        {% if user.is_customer %}
+        <div class="d-flex gap-2">
+            <a href="{% url 'orders:order_list' %}" class="btn btn-outline-success">
+                <i class="bi bi-box-seam me-1"></i>Мои заказы
+            </a>
+            <a href="{% url 'support:my_tickets' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-chat-dots me-1"></i>Тикеты поддержки
+            </a>
+        </div>
+        {% endif %}
+
+        {% if user.is_courier %}
+        <div class="card border-0 shadow-sm mb-4 wallet-balance-card p-4">
+            <p class="text-light opacity-75 small mb-1">Баланс кошелька</p>
+            <div class="display-6 fw-bold text-warning mb-2">{{ user.balance|floatformat:2 }} ₽</div>
+            <a href="{% url 'courier:wallet' %}" class="btn btn-warning btn-sm">
+                <i class="bi bi-wallet2 me-1"></i>Перейти в кошелёк
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

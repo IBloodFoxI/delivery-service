@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Выручка — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Выручка</h2>
+    <a href="{% url 'admin_panel:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Назад
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="text-success fs-1 fw-bold">{{ today_revenue|floatformat:0 }} ₽</div>
+            <div class="text-muted">За сегодня</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="text-primary fs-1 fw-bold">{{ month_revenue|floatformat:0 }} ₽</div>
+            <div class="text-muted">За этот месяц</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="fs-1 fw-bold" style="color:#f97316">{{ total_revenue|floatformat:0 }} ₽</div>
+            <div class="text-muted">Всего за всё время</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-bicycle me-2 text-primary"></i>Заработок курьеров
+            </div>
+            <div class="card-body p-0">
+                {% if courier_earnings %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Курьер</th><th class="text-end">Заработано</th><th class="text-end">Баланс</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for ce in courier_earnings %}
+                            <tr>
+                                <td>{{ ce.courier.full_name }}</td>
+                                <td class="text-end text-success fw-semibold">{{ ce.earned|floatformat:2 }} ₽</td>
+                                <td class="text-end text-muted">{{ ce.courier.balance|floatformat:2 }} ₽</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted"><p>Нет данных</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-arrow-up-circle me-2 text-warning"></i>Заявки на вывод (ожидают)
+            </div>
+            <div class="card-body p-0">
+                {% if withdrawals %}
+                <div class="list-group list-group-flush">
+                    {% for wr in withdrawals %}
+                    <div class="list-group-item px-3 py-2">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="fw-semibold">{{ wr.courier.full_name }}</div>
+                                <div class="text-muted small">{{ wr.phone }} · {{ wr.created_at|date:"d.m.Y H:i" }}</div>
+                                <div class="fw-bold text-success">{{ wr.amount|floatformat:2 }} ₽</div>
+                            </div>
+                            <span class="badge bg-warning text-dark">Ожидает</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <form method="post" action="{% url 'admin_panel:process_withdrawal' wr.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <button class="btn btn-success btn-sm">Подтвердить</button>
+                            </form>
+                            <form method="post" action="{% url 'admin_panel:process_withdrawal' wr.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <button class="btn btn-outline-danger btn-sm">Отклонить</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted"><p class="small mb-0">Заявок нет</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 fw-bold">
+        <i class="bi bi-clock-history me-2"></i>Последние доставленные заказы
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Клиент</th><th>Курьер</th><th class="text-end">Сумма</th><th class="text-end">Доставка</th><th>Дата</th></tr>
+                </thead>
+                <tbody>
+                    {% for order in recent %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.user.full_name }}</td>
+                        <td>{{ order.courier.full_name|default:"—" }}</td>
+                        <td class="text-end fw-semibold text-success">{{ order.total_price|floatformat:2 }} ₽</td>
+                        <td class="text-end text-muted small">{{ order.delivery_fee|floatformat:2 }} ₽</td>
+                        <td class="text-muted small">{{ order.updated_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

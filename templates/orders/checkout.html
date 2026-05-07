@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+
+{% block title %}Оформление заказа — Доставка МИГ{% endblock %}
+
+{% block extra_css %}
+<style>
+#delivery-map {
+    height: 260px;
+    border-radius: .5rem;
+    border: 1px solid #dee2e6;
+}
+.address-suggestions {
+    position: absolute;
+    z-index: 1050;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-top: none;
+    border-radius: 0 0 .375rem .375rem;
+    max-height: 260px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.suggestion-item {
+    padding: .55rem .85rem;
+    cursor: pointer;
+    font-size: .9rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.suggestion-item:hover, .suggestion-item.active { background: #e8f5e9; }
+.suggestion-item .s-main { font-weight: 500; }
+.suggestion-item .s-sub  { color: #6c757d; font-size: .8rem; }
+/* Скрыть ссылку "Создать свою карту" в копирайте Яндекс Карт */
+.ymaps-2-1-79-map-copyrights-promo,
+[class*="map-copyrights-promo"] { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-bag-check me-2 text-success"></i>Оформление заказа</h2>
+<div class="row g-4">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-geo-alt me-2 text-success"></i>Данные доставки
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <label class="form-label text-muted small">ФИО получателя</label>
+                        <p class="fw-semibold mb-0">{{ user.full_name }}</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-muted small">Телефон</label>
+                        <p class="fw-semibold mb-0">{{ user.phone_display }}</p>
+                    </div>
+                </div>
+
+                <form method="post" id="checkoutForm">
+                    {% csrf_token %}
+
+                    <!-- Адрес с автодополнением -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.delivery_address.label }}</label>
+                        <div class="position-relative">
+                            <input type="text" name="delivery_address" id="addressInput"
+                                   class="form-control" autocomplete="off"
+                                   placeholder="Начните вводить адрес..."
+                                   value="{{ form.delivery_address.value|default:'' }}" required>
+                            <div id="addressSuggestions" class="address-suggestions" style="display:none"></div>
+                        </div>
+                        {% if form.delivery_address.errors %}
+                        <div class="text-danger small mt-1">{{ form.delivery_address.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Яндекс Карта -->
+                    <div class="mb-3">
+                        <div id="delivery-map"></div>
+                        <small class="text-muted d-flex gap-3 mt-1">
+                            <span><i class="bi bi-circle-fill text-primary me-1"></i>Вы здесь</span>
+                            <span><i class="bi bi-circle-fill text-success me-1"></i>Адрес доставки</span>
+                            <span><i class="bi bi-info-circle me-1"></i>Кликните на карте или выберите из подсказок</span>
+                        </small>
+                    </div>
+
+                    <input type="hidden" id="addrLat" name="addr_lat">
+                    <input type="hidden" id="addrLon" name="addr_lon">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">{{ form.comment.label }}</label>
+                        {{ form.comment }}
+                    </div>
+
+                    <button type="submit" class="btn btn-mig w-100 py-2 fw-semibold">
+                        <i class="bi bi-credit-card me-2"></i>Оплатить {{ grand_total }} ₽
+                    </button>
+                    <p class="text-muted small text-center mt-2">
+                        <i class="bi bi-shield-check me-1 text-success"></i>Безопасная оплата через ЮКассу
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-receipt me-2 text-success"></i>Состав заказа
+            </div>
+            <div class="card-body p-0">
+                {% for item in items %}
+                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                    <div>
+                        <span class="fw-semibold">{{ item.product.name }}</span>
+                        <small class="text-muted ms-2">x{{ item.quantity }}</small>
+                    </div>
+                    <span class="text-success fw-semibold">{{ item.subtotal }} ₽</span>
+                </div>
+                {% endfor %}
+                <div class="p-3">
+                    <div class="d-flex justify-content-between text-muted small mb-1">
+                        <span>Товары:</span>
+                        <span>{{ cart.total_price }} ₽</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span><i class="bi bi-bicycle me-1"></i>Доставка:</span>
+                        <span>{{ delivery_fee }} ₽</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between fw-bold fs-5">
+                        <span>Итого:</span>
+                        <span class="text-success">{{ grand_total }} ₽</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Яндекс Карты API 2.1 -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ ymaps_key }}&lang=ru_RU"></script>
+<script>
+(function () {
+    const csrf = '{{ csrf_token }}';
+
+    /* ── Яндекс Карта ── */
+    let ymap = null, placemark = null, userPlacemark = null;
+
+    ymaps.ready(function () {
+        const DEFAULT_CENTER = [55.7558, 37.6173];
+        const DEFAULT_ZOOM   = 10;
+
+        ymap = new ymaps.Map('delivery-map', {
+            center: DEFAULT_CENTER,
+            zoom: DEFAULT_ZOOM,
+            controls: ['zoomControl', 'geolocationControl'],
+        });
+
+        /* Геолокация пользователя — центрируем и ставим маркер */
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                ymap.setCenter([lat, lon], 14);
+
+                // Синий маркер "Вы здесь"
+                if (userPlacemark) ymap.geoObjects.remove(userPlacemark);
+                userPlacemark = new ymaps.Placemark([lat, lon], {
+                    balloonContent: '<b>Вы здесь</b>',
+                    hintContent: 'Ваше местоположение',
+                }, {
+                    preset: 'islands#blueDotIconWithCaption',
+                    iconCaption: 'Вы здесь',
+                });
+                ymap.geoObjects.add(userPlacemark);
+            }, function () {
+                // Геолокация отклонена — остаёмся на Москве
+            }, { enableHighAccuracy: true });
+        }
+
+        /* Клик по карте → обратное геокодирование → заполнить поле адреса */
+        ymap.events.add('click', function (e) {
+            const coords = e.get('coords');
+            ymaps.geocode(coords, { results: 1 }).then(function (res) {
+                const firstObj = res.geoObjects.get(0);
+                if (!firstObj) return;
+                const address = firstObj.getAddressLine();
+                input.value = address;
+                latField.value = coords[0];
+                lonField.value = coords[1];
+                setMapMarker(coords[0], coords[1]);
+                hideDropdown();
+            });
+        });
+    });
+
+    function setMapMarker(lat, lon) {
+        if (!ymap) return;
+        if (placemark) ymap.geoObjects.remove(placemark);
+        placemark = new ymaps.Placemark([lat, lon], {}, {
+            preset: 'islands#greenDotIcon',
+        });
+        ymap.geoObjects.add(placemark);
+        ymap.setCenter([lat, lon], 16);
+    }
+
+    /* ── Автодополнение DaData ── */
+    const input      = document.getElementById('addressInput');
+    const dropdown   = document.getElementById('addressSuggestions');
+    const latField   = document.getElementById('addrLat');
+    const lonField   = document.getElementById('addrLon');
+    let debounce, activeIdx = -1;
+
+    input.addEventListener('input', function () {
+        clearTimeout(debounce);
+        if (input.value.trim().length < 3) { hideDropdown(); return; }
+        debounce = setTimeout(() => fetchSuggestions(input.value.trim()), 300);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        const items = dropdown.querySelectorAll('.suggestion-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown')  { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+        else if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); items[activeIdx].click(); }
+        else if (e.key === 'Escape') { hideDropdown(); }
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !dropdown.contains(e.target)) hideDropdown();
+    });
+
+    function fetchSuggestions(query) {
+        fetch('{% url "orders:suggest_address" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrf, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        })
+        .then(r => r.json())
+        .then(data => renderDropdown(data.suggestions || []))
+        .catch(() => hideDropdown());
+    }
+
+    function renderDropdown(suggestions) {
+        dropdown.innerHTML = '';
+        activeIdx = -1;
+        if (!suggestions.length) { hideDropdown(); return; }
+        suggestions.forEach(function (s) {
+            const parts = s.value.split(',');
+            const main  = parts.slice(0, 2).join(',').trim();
+            const sub   = parts.slice(2).join(',').trim();
+            const item  = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.innerHTML = `<div class="s-main">${main}</div>${sub ? '<div class="s-sub">' + sub + '</div>' : ''}`;
+            item.addEventListener('click', () => selectSuggestion(s));
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = 'block';
+    }
+
+    function selectSuggestion(s) {
+        input.value = s.value;
+        const lat = parseFloat(s.data.geo_lat);
+        const lon = parseFloat(s.data.geo_lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            latField.value = lat;
+            lonField.value = lon;
+            setMapMarker(lat, lon);
+        }
+        hideDropdown();
+    }
+
+    function setActive(idx) {
+        dropdown.querySelectorAll('.suggestion-item').forEach(el => el.classList.remove('active'));
+        activeIdx = idx;
+        if (idx >= 0) dropdown.querySelectorAll('.suggestion-item')[idx].classList.add('active');
+    }
+
+    function hideDropdown() { dropdown.style.display = 'none'; activeIdx = -1; }
+
+})();
+</script>
+{% endblock %}

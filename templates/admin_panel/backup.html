@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Резервные копии — Доставка МИГ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-database-fill-gear me-2 text-success"></i>Резервные копии БД</h2>
+    <a href="{% url 'admin_panel:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Панель администратора
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- JSON backup -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-filetype-json me-2 text-warning"></i>JSON-бэкап
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Дамп через Django dumpdata. Формат JSON+gzip.
+                    Не зависит от версии PostgreSQL.
+                </p>
+                <form method="post" action="{% url 'admin_panel:backup_create' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <input type="text" name="notes" class="form-control form-control-sm" placeholder="Примечание (необязательно)">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 text-dark fw-semibold">
+                        <i class="bi bi-download me-2"></i>Создать JSON-бэкап
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL backup -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-server me-2 text-primary"></i>SQL-бэкап (pg_dump)
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Полный дамп PostgreSQL через pg_dump. Формат SQL+gzip.
+                    Подходит для переноса на другой сервер.
+                </p>
+                <form method="post" action="{% url 'admin_panel:backup_sql_create' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <input type="text" name="notes" class="form-control form-control-sm" placeholder="Примечание (необязательно)">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                        <i class="bi bi-database-down me-2"></i>Создать SQL-бэкап
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-backup settings -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 fw-bold">
+                <i class="bi bi-clock-history me-2 text-primary"></i>Автоматическое резервное копирование
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin_panel:backup_settings' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Периодичность</label>
+                        <select name="frequency" class="form-select">
+                            {% for val, label in frequency_choices %}
+                            <option value="{{ val }}" {% if cfg.frequency == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Хранить последних копий</label>
+                        <input type="number" name="max_backups" class="form-control" value="{{ cfg.max_backups }}" min="1" max="100">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" name="is_enabled" id="autoEnabled"
+                               {% if cfg.is_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="autoEnabled">Включить автобэкап</label>
+                    </div>
+                    {% if cfg.last_backup_at %}
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-check-circle text-success me-1"></i>
+                        Последний бэкап: {{ cfg.last_backup_at|date:"d.m.Y H:i" }}
+                    </p>
+                    {% else %}
+                    <p class="text-muted small mb-3"><i class="bi bi-dash-circle me-1"></i>Автобэкап ещё не запускался</p>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-save me-2"></i>Сохранить настройки
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backup list -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 fw-bold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ul me-2"></i>Список резервных копий</span>
+        <span class="badge bg-secondary">{{ records.count }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Файл</th>
+                        <th>Размер</th>
+                        <th>Дата создания</th>
+                        <th>Примечание</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    <tr>
+                        <td>
+                            {% if '.sql.' in rec.filename %}
+                            <i class="bi bi-server text-primary me-2"></i>
+                            <span class="badge bg-primary me-1">SQL</span>
+                            {% else %}
+                            <i class="bi bi-filetype-json text-warning me-2"></i>
+                            <span class="badge bg-warning text-dark me-1">JSON</span>
+                            {% endif %}
+                            <span class="font-monospace small">{{ rec.filename }}</span>
+                        </td>
+                        <td class="text-muted small">{{ rec.size_display }}</td>
+                        <td class="text-muted small">{{ rec.created_at|date:"d.m.Y H:i:s" }}</td>
+                        <td class="text-muted small">{{ rec.notes|default:"—" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'admin_panel:backup_download' rec.id %}"
+                               class="btn btn-outline-success btn-sm me-1" title="Скачать">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            {% if '.sql.' in rec.filename %}
+                            <button type="button" class="btn btn-outline-warning btn-sm me-1"
+                                    title="Восстановить SQL"
+                                    onclick="confirmRestore('{% url 'admin_panel:backup_sql_restore' rec.id %}', '{{ rec.filename }}')">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-outline-warning btn-sm me-1"
+                                    title="Восстановить JSON"
+                                    onclick="confirmRestore('{% url 'admin_panel:backup_restore' rec.id %}', '{{ rec.filename }}')">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                    title="Удалить"
+                                    onclick="confirmDelete('{% url 'admin_panel:backup_delete' rec.id %}', '{{ rec.filename }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-database-x" style="font-size:3rem;"></i>
+            <p class="mt-3">Резервных копий пока нет. Создайте первую копию выше.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Hidden forms for actions -->
+<form id="restoreForm" method="post" style="display:none;">{% csrf_token %}</form>
+<form id="deleteForm" method="post" style="display:none;">{% csrf_token %}</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmRestore(url, filename) {
+    if (confirm(`Восстановить базу данных из файла "${filename}"?\n\nВНИМАНИЕ: текущие данные будут перезаписаны!`)) {
+        const form = document.getElementById('restoreForm');
+        form.action = url;
+        form.submit();
+    }
+}
+function confirmDelete(url, filename) {
+    if (confirm(`Удалить резервную копию "${filename}"? Это действие необратимо.`)) {
+        const form = document.getElementById('deleteForm');
+        form.action = url;
+        form.submit();
+    }
+}
+</script>
+{% endblock %}
