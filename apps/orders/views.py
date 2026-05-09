@@ -222,6 +222,17 @@ def order_detail(request, order_id):
     })
 
 
+@login_required
+def order_status_json(request, order_id):
+    if request.user.is_customer:
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+    elif request.user.is_admin_role or request.user.is_staff:
+        order = get_object_or_404(Order, id=order_id)
+    else:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    return JsonResponse({'status': order.status})
+
+
 @require_POST
 @login_required
 def suggest_address(request):

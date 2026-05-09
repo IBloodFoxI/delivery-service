@@ -128,7 +128,6 @@
                             <strong>В пути</strong>
                             <p class="mb-0 text-muted small">
                                 Ориентировочное время: ~{{ delivery.estimated_minutes }} мин
-                                <br><em class="text-info small">(Отслеживание доступно в мобильном приложении)</em>
                             </p>
                         </div>
                     </div>
@@ -158,4 +157,20 @@
 <a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary mt-4">
     <i class="bi bi-arrow-left me-1"></i>Назад к заказам
 </a>
+
+{% if order.status not in 'delivered,cancelled' %}
+<script>
+const currentStatus = "{{ order.status }}";
+setInterval(function() {
+    fetch("{% url 'orders:order_status_json' order.id %}")
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== currentStatus) {
+                location.reload();
+            }
+        })
+        .catch(() => {});
+}, 15000);
+</script>
+{% endif %}
 {% endblock %}

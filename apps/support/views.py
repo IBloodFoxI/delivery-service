@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from .models import SupportTicket, TicketMessage
 from .forms import TicketCreateForm, TicketReplyForm
 from apps.orders.models import Order
@@ -65,3 +66,14 @@ def ticket_detail(request, ticket_id):
 def my_tickets(request):
     tickets = SupportTicket.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'support/my_tickets.html', {'tickets': tickets})
+
+
+@login_required
+def ticket_msgs_count(request, ticket_id):
+    if request.user.is_customer:
+        ticket = get_object_or_404(SupportTicket, id=ticket_id, user=request.user)
+    elif request.user.is_support or request.user.is_admin_role or request.user.is_staff:
+        ticket = get_object_or_404(SupportTicket, id=ticket_id)
+    else:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+    return JsonResponse({'count': ticket.messages.count(), 'status': ticket.status})

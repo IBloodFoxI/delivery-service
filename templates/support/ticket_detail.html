@@ -90,4 +90,20 @@
         </div>
     </div>
 </div>
+
+{% if ticket.status != 'closed' %}
+<script>
+const currentMsgCount = {{ msgs|length }};
+setInterval(function() {
+    fetch("{% url 'support:ticket_msgs_count' ticket.id %}")
+        .then(r => r.json())
+        .then(data => {
+            if (data.count !== currentMsgCount || data.status !== "{{ ticket.status }}") {
+                location.reload();
+            }
+        })
+        .catch(() => {});
+}, 8000);
+</script>
+{% endif %}
 {% endblock %}

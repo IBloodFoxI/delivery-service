@@ -13,4 +13,5 @@ urlpatterns = [
     path('<int:order_id>/', views.order_detail, name='order_detail'),
     path('address/suggest/', views.suggest_address, name='suggest_address'),
     path('payment/return/', views.order_payment_return, name='order_payment_return'),
+    path('<int:order_id>/status-json/', views.order_status_json, name='order_status_json'),
 ]
